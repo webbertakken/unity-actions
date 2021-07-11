@@ -1,0 +1,294 @@
+name: Actions 😎
+
+on:
+  pull_request: {}
+  push: { branches: [master] }
+
+env:
+  UNITY_LICENSE: "<xfbml version=\"1.0\" encoding='reset--hard'\"da-art85:master><root>\n    <License id=\"Terms\">\n        <MachineBindings><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            <Binding Key=\"1\" Value=\"670bfd667f6d64074159a9181f2e15048ad4c37d\"/>\n            <Binding Key=\"2\" Value=\"576562626572264761624c65526f7578\"/>\n        </MachineBindings>\n        <MachineID Value=\"D7nTUnjNAmtsUMcnoyrqkgIbYdM=\"/>\n        <SerialHash Value=\"1efd68fa935192b6090ac03c77d289a9f588c55a\"/>\n        <Features>\n            <Feature Value=\"33\"/>\n            <Feature Value=\"1\"/>\n            <Feature Value=\"12\"/>\n            <Feature Value=\"2\"/>\n            <Feature Value=\"24\"/>\n            <Feature Value=\"3\"/>\n            <Feature Value=\"36\"/>\n            <Feature Value=\"17\"/>\n            <Feature Value=\"19\"/>\n            <Feature Value=\"62\"/>\n        </Features>\n        <DeveloperData Value=\"AQAAAEY0LUg2WFMtUE00NS1SM0M4LUUyWlotWkdWOA==\"/>\n        <SerialMasked Value=\"F4-H6XS-PM45-R3C8-E2ZZ-XXXX\"/>\n        <StartDate Value=\"2018-05-02T00:00:00\"/>\n        <UpdateDate Value=\"2021-05-21T20:48:24\"/>\n        <InitialActivationDate Value=\"2018-05-02T14:21:28\"/>\n        <LicenseVersion Value=\"6.x\"/>\n        <ClientProvidedVersion Value=\"2019.2.11f1\"/>\n        <AlwaysOnline Value=\"false\"/>\n        <Entitlements>\n            <Entitlement Ns=\"unity_editor\" Tag=\"UnityPersonal\" Type=\"EDITOR\" ValidTo=\"9999-12-31T00:00:00\"/>\n            <Entitlement Ns=\"unity_editor\" Tag=\"DarkSkin\" Type=\"EDITOR_FEATURE\" ValidTo=\"9999-12-31T00:00:00\"/>\n        </Entitlements>\n    </License>\n<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\"/><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\"/><Reference URI=\"#Terms\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"/></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\"/><DigestValue>Ui8I607il6gWRH3o8x/HMV7eva8=</DigestValue></Reference></SignedInfo><SignatureValue>bW/8QoV0skYzBUtBvMCxZsQa1kjdBw1cumQZeaSuF9FjpHzp3blFEBTtvvOOB7C0j/19qtdV/QMq\nXkMQj2qQ99rYQPXSrPKySQrdm/6riYd2VPhOMc4QSsbV/OphYOMYkYju1tsvY4ZDi6TDFuT7C1OR\nwiCtmvbUs9Lw/u3jMGjWd/cqZAkupulnXpGz8ltI2GA3RWwpFH+rxEOJWlpqYIfioKntlHv8dbAx\n5fONrmMH2yMJQaS3YOW2noZkoMCgMlsuXE6ddqKz0soWbYXqXEQcNHY4JWcDr97ISdeI3fDP1/XR\nz0bzpLWTGR4lPxuREKW7jqnk/NwoVUXx+anUKg==</SignatureValue></Signature></root>"
+
+jobs:
+  readmeWorkflow:
+    name: Readme Workflow ✨
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
+        run: |
+          git lfs pull
+          git add .
+          git reset --hard
+
+      - name: Restore Library cache
+        uses: actions/cache@v2
+        with:
+          path: test-projects/test-project/Library
+          key: Library-test-project-WebGL
+
+      # Test
+      - name: Run tests
+        uses: webbertakken/unity-test-runner@v2
+        with:
+          projectPath: test-projects/test-project
+
+      # Build
+      - name: Build project
+        uses: webbertakken/unity-builder@v2
+        with:
+          projectPath: test-projects/test-project
+          targetPlatform: WebGL
+
+      # Output
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Build
+          path: build
+
+  #
+  # End of readme workflow.
+  #
+  # Below is a test of most combinations, for testing integrity.
+  #
+
+  requestManualActivationFile:
+    name: Request manual activation file 🔑
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository
+      - uses: actions/checkout@v2
+
+      # Request manual activation file
+      - uses: webbertakken/unity-request-manual-activation-file@v2
+        id: getManualLicenseFile
+
+      # Upload artifact (Unity_v20XX.X.XXXX.alf)
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Manual Activation File
+          path: ${{ steps.getManualLicenseFile.outputs.filePath }}
+
+#  requestActivation:
+#    name: Request activation ✔
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: webbertakken/unity-activate@v2
+#
+#  activateAndThenReturnLicense:
+#    name: returnLicense 🎈
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: webbertakken/unity-activate@v2
+#      - uses: webbertakken/unity-return-license@v2
+
+  testRunnerInEditMode:
+    name: Test in editmode 📝
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
+        run: |
+          git lfs pull
+          git add .
+          git reset --hard
+
+      - name: Restore Library cache
+        uses: actions/cache@v2
+        with:
+          path: test-projects/test-project/Library
+          key: Library-test-project
+          restore-keys: |
+            Library-test-
+
+      # Configure test runner
+      - uses: webbertakken/unity-test-runner@v2
+        id: testRunner
+        with:
+          projectPath: test-projects/test-project
+          testMode: editmode
+
+      # Upload artifact
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Test results (edit mode)
+          path: ${{ steps.testRunner.outputs.artifactsPath }}
+
+  testRunnerInPlayMode:
+    name: Test in playmode 📺
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
+        run: |
+          git lfs pull
+          git add .
+          git reset --hard
+
+      - name: Restore Library cache
+        uses: actions/cache@v2
+        with:
+          path: test-projects/test-project/Library
+          key: Library-test-project-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Library-test-project-
+            Library-
+
+      # Configure test runner
+      - uses: webbertakken/unity-test-runner@v2
+        id: testRunner
+        with:
+          projectPath: test-projects/test-project
+          testMode: playmode
+
+      # Upload artifact
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Test results (play mode)
+          path: ${{ steps.testRunner.outputs.artifactsPath }}
+
+  testRunnerInAllModes:
+    name: Test all modes ✨
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository (required to test local actions)
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
+        run: |
+          git lfs pull
+          git add .
+          git reset --hard
+
+      - name: Restore Library cache
+        uses: actions/cache@v2
+        with:
+          path: test-projects/test-project/Library
+          key: Library-test-project-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Library-test-project-
+            Library-
+
+      # Configure test runner
+      - uses: webbertakken/unity-test-runner@v2
+        id: testRunner
+        with:
+          projectPath: test-projects/test-project
+          testMode: all
+
+      # Upload artifacts
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Test results (all modes)
+          path: ${{ steps.testRunner.outputs.artifactsPath }}
+
+  #
+  # Complete advanced workflow
+  #
+
+  buildAndTestForSomePlatforms:
+    name: Build for ${{ matrix.targetPlatform }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        projectPath:
+          - test-projects/test-project
+        targetPlatform:
+          - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
+          - StandaloneWindows64 # Build a Windows 64-bit standalone.
+          - StandaloneLinux64 # Build a Linux 64-bit standalone.
+          - iOS # Build an iOS player.
+          - WebGL # WebGL.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
+        run: |
+          git lfs pull
+          git add .
+          git reset --hard
+
+      - name: Restore Library cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ matrix.projectPath }}/Library
+          key: Library-buildAndTest-${{ matrix.projectPath }}-buildAndTest-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Library-${{ matrix.projectPath }}-buildAndTest-
+            Library-${{ matrix.projectPath }}-
+      - uses: webbertakken/unity-test-runner@v2
+        id: testRunner
+        with:
+          projectPath: ${{ matrix.projectPath }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Test results (all modes)
+          path: ${{ steps.testRunner.outputs.artifactsPath }}
+      - uses: webbertakken/unity-builder@v2
+        with:
+          projectPath: ${{ matrix.projectPath }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+          customParameters: "-myParameter myValue -myBoolean -ThirdParameter andItsValue"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Build (${{ matrix.targetPlatform }})
+          path: build/${{ matrix.targetPlatform }}
